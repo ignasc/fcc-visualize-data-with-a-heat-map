@@ -2,8 +2,11 @@
 #root {
     min-width: 100vw;
 }
-#scaterGraph{
+#heat-map{
     border: 1px solid rgb(207, 207, 207);
     border-radius: 10px;
     box-shadow: 0px 0px 10px rgb(153, 153, 153);
+}
+#heat-map-bar {
+    stroke: black
 }

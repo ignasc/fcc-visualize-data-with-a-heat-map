@@ -14,6 +14,9 @@ document.addEventListener("DOMContentLoaded", function(){
               const chartHeight = 500;
               const padding = 60;
 
+              /*Month array for axis labeling*/
+              const monthNames = ["January","February","March","April","May","June","July", "August","September","October","November","December"];
+
               /*Some functions for returning proper data*/
               const returnYear = (jsonObject) => {
                      return jsonObject["year"];
@@ -65,11 +68,11 @@ document.addEventListener("DOMContentLoaded", function(){
               
              const heatMapXScale = d3.scaleLinear()
                      .domain([d3.min(dataArray, (data)=>data["year"]),
-                     d3.max(dataArray, (data)=>data["year"])])
+                     d3.max(dataArray, (data)=>data["year"])+5])
                      .range([padding, chartWidth - padding]);
 
               const heatMapYScale = d3.scaleLinear()
-                     .domain([13, 0])
+                     .domain([13, 1])
                      .range ([chartHeight - padding, padding]);
 
               /*scale for temperature indication as color*/
@@ -81,7 +84,9 @@ document.addEventListener("DOMContentLoaded", function(){
 
               /*let's calculate heat map bar width and height*/
               const barWidth = (chartWidth-padding*2)/(d3.max(dataArray, (data)=>data["year"]) - d3.min(dataArray, (data)=>data["year"])) + "px";
-              const barHeight =  (chartHeight-padding*2)/12 + "px";
+              /*offset is half the height of a bar - to center it when positioning on heat map*/
+              const barYPositionOffset = ((chartHeight-padding*2)/12)/2;
+              const barHeight =  barYPositionOffset*2 + "px";
 
               const setTempColor = (tempVariance)=>{
                      return "hsl(" + temperatureColorScale(tempVariance) + ", 100%, 50%";
@@ -99,8 +104,34 @@ document.addEventListener("DOMContentLoaded", function(){
                             return heatMapXScale(data["year"]);
                      })
                      .attr("y", (data)=>{
-                            return heatMapYScale(data["month"]);
+                            return heatMapYScale(data["month"])-barYPositionOffset;
                      });
+
+              /*Generate X and Y axis with labels*/
+              const xAxis = d3.axisBottom(heatMapXScale);
+              const yAxis = d3.axisLeft(heatMapYScale);
+
+              xAxis.ticks(10);
+              yAxis.ticks(13)
+              .tickFormat(monthNumber => {
+                     if(monthNumber < 13){
+                            return monthNames[monthNumber-1];
+                     } else {
+                            return "";
+                     }
+              });
+
+              svg.append("g")
+              .attr("transform", "translate(0," + (chartHeight - padding-barYPositionOffset) + ")")
+              .attr("id", "x-axis")
+              .call(xAxis)
+              .selectAll("text")
+              .attr("transform", "translate(-20,10) rotate(-45)");
+
+              svg.append("g")
+              .attr("transform","translate(" + padding + ",0)")
+              .attr("id", "y-axis")
+              .call(yAxis);
              
              /*DEBUG*/
               console.log(dataArray[0]);

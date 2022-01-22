@@ -11,8 +11,12 @@ document.addEventListener("DOMContentLoaded", function(){
               
               const pageWidth  = document.documentElement.scrollWidth;
               const chartWidth = pageWidth<1024? 1024:pageWidth*0.8;
-              const chartHeight = 500;
+              const chartHeight = 800;
+              const heatMapHeight = chartHeight*0.8;
               const padding = 60;
+
+              /*constants for legend*/
+              const legendXAxisTicks = 5;
 
               /*Month array for axis labeling*/
               const monthNames = ["January","February","March","April","May","June","July", "August","September","October","November","December"];
@@ -30,11 +34,23 @@ document.addEventListener("DOMContentLoaded", function(){
 
               /*DATA PROCESSING FOR HEAT MAP*/
               const dataArray = [...jsonDATA["monthlyVariance"]];
-              /*const tempDataArray = [
-                     jsonDATA["monthlyVariance"][0],
-                     jsonDATA["monthlyVariance"][50],
-                     jsonDATA["monthlyVariance"][500]
-              ];*/
+              
+              /*generate data set for temperature legend*/
+              let minimumTemp = d3.min(dataArray, (data)=>data["variance"]);
+              let maximumTemp = d3.max(dataArray, (data)=>data["variance"]);
+              let maxDifference = maximumTemp-minimumTemp;
+              let temperatureStep = maxDifference/legendXAxisTicks;
+              let temporaryArray = [];
+              let temporaryFunction = ()=>{
+                     console.log("function executed");
+                     let i = minimumTemp;
+                     do{
+                            temporaryArray.push(i);
+                            i=i+temperatureStep
+                     } while(i<=maximumTemp+1);
+              };
+              temporaryFunction();
+              const legendTemperatureData = [...temporaryArray];
               
               /*DATA PROCESSING FOR HEAT MAP END*/
 
@@ -64,33 +80,52 @@ document.addEventListener("DOMContentLoaded", function(){
               .attr("id", "title")
               .attr("text-anchor", "middle");
 
+              /*Tooltips for each scatter plot dot*/
+              const toolTip = d3.select("body")
+                     .append("div")
+                     .attr("id", "tooltip")
+                     .style("opacity", 0);
+
               /*Define main heat map scales*/
               
-             const heatMapXScale = d3.scaleLinear()
+              const heatMapXScale = d3.scaleLinear()
                      .domain([d3.min(dataArray, (data)=>data["year"]),
                      d3.max(dataArray, (data)=>data["year"])+5])
                      .range([padding, chartWidth - padding]);
 
               const heatMapYScale = d3.scaleLinear()
                      .domain([13, 1])
-                     .range ([chartHeight - padding, padding]);
+                     .range ([heatMapHeight - padding, padding]);
 
               /*scale for temperature indication as color*/
               const temperatureColorScale = d3.scaleLinear()
-              .domain([d3.min(dataArray, (data)=>data["variance"]),
-              d3.max(dataArray, (data)=>data["variance"])])
+              .domain([minimumTemp, maximumTemp])
               /*color hue range yellow to red (60 - 0)*/
               .range([60, 0]);
 
               /*let's calculate heat map bar width and height*/
               const barWidth = (chartWidth-padding*2)/(d3.max(dataArray, (data)=>data["year"]) - d3.min(dataArray, (data)=>data["year"])) + "px";
-              /*offset is half the height of a bar - to center it when positioning on heat map*/
-              const barYPositionOffset = ((chartHeight-padding*2)/12)/2;
-              const barHeight =  barYPositionOffset*2 + "px";
+              /*offset is half the height of a bar - to center it along Y labels when positioning on heat map*/
+              const barYPositionOffset = ((heatMapHeight-padding*2)/12)/2;
+              const barHeight =  barYPositionOffset*2;
+              const barHeightPx =  barHeight + "px";
 
               const setTempColor = (tempVariance)=>{
                      return "hsl(" + temperatureColorScale(tempVariance) + ", 100%, 50%";
               };
+
+              svg.selectAll("#legend-bars")
+                     .data(legendTemperatureData)
+                     .enter()
+                     .append("rect")
+                     .attr("id", "legend-bar")
+                     .attr("width", barWidth)
+                     .attr("height", barHeight)
+                     .style("fill", (data)=>setTempColor(data))
+                     .attr("x", (data)=>{
+                            return temperatureColorScale(data)+padding;
+                     })
+                     .attr("y", chartHeight-barHeight-padding-barYPositionOffset);
 
               svg.selectAll("rect")
                      .data(dataArray)
@@ -98,18 +133,45 @@ document.addEventListener("DOMContentLoaded", function(){
                      .append("rect")
                      .attr("id", "heat-map-bar")
                      .attr("width", barWidth)
-                     .attr("height", barHeight)
+                     .attr("height", barHeightPx)
+                     .attr("variance", (data)=>data["variance"])
                      .style("fill", (data)=>setTempColor(data["variance"]))
                      .attr("x", (data)=>{
                             return heatMapXScale(data["year"]);
                      })
                      .attr("y", (data)=>{
                             return heatMapYScale(data["month"])-barYPositionOffset;
+                     })
+                     
+                     /*Setting up tooltip in a way so it passes the freeCodeCamp tooltip test*/
+                     .on("mouseover", (pelesEvent)=>{
+                            console.log(Math.round(parseFloat(pelesEvent.target.attributes.getNamedItem("y").nodeValue) - 50) + "px");
+
+                            toolTip
+                                   .transition()
+                                   .duration(100)
+                                   .style("opacity", 0.9);
+
+                            toolTip
+                                   .html("Tooltip")
+                                   /*tooltip positioning by getting data from mouseover event target*/
+                                   .style("margin-left", chartWidth/2 + "px")
+                                   .style("Top",  chartHeight*0.8 + "px");
+
+                            toolTip
+                                   .attr("variance", pelesEvent.target.attributes.getNamedItem("variance").nodeValue);
+                     })
+                     .on("mouseout", ()=>{
+                            toolTip
+                                   .transition()
+                                   .duration(100)
+                                   .style("opacity", 0);
                      });
 
               /*Generate X and Y axis with labels*/
               const xAxis = d3.axisBottom(heatMapXScale);
               const yAxis = d3.axisLeft(heatMapYScale);
+              const legendXAxis = d3.axisBottom(temperatureColorScale);
 
               xAxis.ticks(10);
               yAxis.ticks(13)
@@ -120,9 +182,10 @@ document.addEventListener("DOMContentLoaded", function(){
                             return "";
                      }
               });
+              legendXAxis.ticks(legendXAxisTicks);
 
               svg.append("g")
-              .attr("transform", "translate(0," + (chartHeight - padding-barYPositionOffset) + ")")
+              .attr("transform", "translate(0," + (heatMapHeight - padding-barYPositionOffset) + ")")
               .attr("id", "x-axis")
               .call(xAxis)
               .selectAll("text")
@@ -132,6 +195,14 @@ document.addEventListener("DOMContentLoaded", function(){
               .attr("transform","translate(" + padding + ",0)")
               .attr("id", "y-axis")
               .call(yAxis);
+
+              svg.append("g")
+              .attr("transform", "translate(" + padding + "," + (chartHeight - padding-barYPositionOffset) + ")")
+              .attr("id", "legend-axis")
+              .call(legendXAxis)
+              .selectAll("text")
+              .attr("transform", "translate(-20,10) rotate(-90)");
+
              
              /*DEBUG*/
               console.log(dataArray[0]);

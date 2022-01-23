@@ -80,6 +80,14 @@ document.addEventListener("DOMContentLoaded", function(){
               .attr("id", "title")
               .attr("text-anchor", "middle");
 
+              /*Add a Description*/
+             svg.append("text")
+             .text("Heat Map Title Description Goes Here")
+             .attr("x", chartWidth/2)
+             .attr("y", heatMapHeight)
+             .attr("id", "description")
+             .attr("text-anchor", "middle");
+
               /*Tooltips for each scatter plot dot*/
               const toolTip = d3.select("body")
                      .append("div")
@@ -132,9 +140,9 @@ document.addEventListener("DOMContentLoaded", function(){
                      .enter()
                      .append("rect")
                      .attr("id", "heat-map-bar")
+                     .attr("class", "cell")
                      .attr("width", barWidth)
                      .attr("height", barHeightPx)
-                     .attr("variance", (data)=>data["variance"])
                      .style("fill", (data)=>setTempColor(data["variance"]))
                      .attr("x", (data)=>{
                             return heatMapXScale(data["year"]);
@@ -142,10 +150,15 @@ document.addEventListener("DOMContentLoaded", function(){
                      .attr("y", (data)=>{
                             return heatMapYScale(data["month"])-barYPositionOffset;
                      })
+                     /*add year and month as attributes to use on tooltip*/
+                     .attr("data-year", (data)=>data["year"])
+                     .attr("data-month", (data)=>data["month"])
+                     .attr("data-temp", (data)=>data["variance"])
                      
                      /*Setting up tooltip in a way so it passes the freeCodeCamp tooltip test*/
                      .on("mouseover", (pelesEvent)=>{
-                            console.log(Math.round(parseFloat(pelesEvent.target.attributes.getNamedItem("y").nodeValue) - 50) + "px");
+                            console.log("mouseover:");
+                            console.log(pelesEvent.layerX);
 
                             toolTip
                                    .transition()
@@ -153,10 +166,15 @@ document.addEventListener("DOMContentLoaded", function(){
                                    .style("opacity", 0.9);
 
                             toolTip
-                                   .html("Tooltip")
+                                   .html("Temperature Variance: " + pelesEvent.target.attributes.getNamedItem("data-temp").nodeValue + "</br>" + "Date: " + pelesEvent.target.attributes.getNamedItem("data-year").nodeValue + "-" + pelesEvent.target.attributes.getNamedItem("data-month").nodeValue)
+                                   .style("position", "fixed")
+                                   .style("background-color", "white")
+                                   .style("width", "120px")
+                                   .style("border-radius", "5px")
+                                   .style("box-shadow", "0px 5px 10px rgba(44, 72, 173, 0.5)")
                                    /*tooltip positioning by getting data from mouseover event target*/
-                                   .style("margin-left", chartWidth/2 + "px")
-                                   .style("Top",  chartHeight*0.8 + "px");
+                                   .style("margin-left", pelesEvent.layerX + "px")
+                                   .style("Top",  (pelesEvent.layerY + 100) + "px");
 
                             toolTip
                                    .attr("variance", pelesEvent.target.attributes.getNamedItem("variance").nodeValue);

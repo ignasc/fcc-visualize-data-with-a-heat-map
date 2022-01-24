@@ -84,7 +84,7 @@ document.addEventListener("DOMContentLoaded", function(){
              svg.append("text")
              .text("Heat Map Title Description Goes Here")
              .attr("x", chartWidth/2)
-             .attr("y", heatMapHeight)
+             .attr("y", chartHeight - padding*2)
              .attr("id", "description")
              .attr("text-anchor", "middle");
 
@@ -102,7 +102,7 @@ document.addEventListener("DOMContentLoaded", function(){
                      .range([padding, chartWidth - padding]);
 
               const heatMapYScale = d3.scaleLinear()
-                     .domain([13, 1])
+                     .domain([12, 0])
                      .range ([heatMapHeight - padding, padding]);
 
               /*scale for temperature indication as color*/
@@ -177,7 +177,7 @@ document.addEventListener("DOMContentLoaded", function(){
                                    .style("Top",  (pelesEvent.layerY + 100) + "px");
 
                             toolTip
-                                   .attr("variance", pelesEvent.target.attributes.getNamedItem("variance").nodeValue);
+                                   .attr("data-temp", pelesEvent.target.attributes.getNamedItem("data-temp").nodeValue);
                      })
                      .on("mouseout", ()=>{
                             toolTip
@@ -203,7 +203,7 @@ document.addEventListener("DOMContentLoaded", function(){
               legendXAxis.ticks(legendXAxisTicks);
 
               svg.append("g")
-              .attr("transform", "translate(0," + (heatMapHeight - padding-barYPositionOffset) + ")")
+              .attr("transform", "translate(0," + (heatMapHeight - padding + barHeight / 2) + ")")
               .attr("id", "x-axis")
               .call(xAxis)
               .selectAll("text")

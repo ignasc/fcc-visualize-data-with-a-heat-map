@@ -34,15 +34,15 @@ document.addEventListener("DOMContentLoaded", function(){
 
               /*DATA PROCESSING FOR HEAT MAP*/
               const dataArray = [...jsonDATA["monthlyVariance"]];
+              console.log(dataArray);
               
-              /*generate data set for temperature legend*/
+              /*generate data set for temperature legend and other descriptive elements*/
               let minimumTemp = d3.min(dataArray, (data)=>data["variance"]);
               let maximumTemp = d3.max(dataArray, (data)=>data["variance"]);
               let maxDifference = maximumTemp-minimumTemp;
               let temperatureStep = maxDifference/legendXAxisTicks;
               let temporaryArray = [];
               let temporaryFunction = ()=>{
-                     console.log("function executed");
                      let i = minimumTemp;
                      do{
                             temporaryArray.push(i);
@@ -51,6 +51,9 @@ document.addEventListener("DOMContentLoaded", function(){
               };
               temporaryFunction();
               const legendTemperatureData = [...temporaryArray];
+
+              let startYear = d3.min(dataArray, data=>data["year"]);
+              let endYear = d3.max(dataArray, data=>data["year"]);
               
               /*DATA PROCESSING FOR HEAT MAP END*/
 
@@ -82,7 +85,7 @@ document.addEventListener("DOMContentLoaded", function(){
 
               /*Add a Description*/
              svg.append("text")
-             .text("Heat Map Title Description Goes Here")
+             .text("Base temperature between " + startYear + " and " + endYear + " is: " + jsonDATA["baseTemperature"] + " C" + "\u00B0")
              .attr("x", chartWidth/2)
              .attr("y", chartHeight - padding*2)
              .attr("id", "description")
@@ -98,11 +101,11 @@ document.addEventListener("DOMContentLoaded", function(){
               
               const heatMapXScale = d3.scaleLinear()
                      .domain([d3.min(dataArray, (data)=>data["year"]),
-                     d3.max(dataArray, (data)=>data["year"])+5])
+                     d3.max(dataArray, (data)=>data["year"])])
                      .range([padding, chartWidth - padding]);
 
               const heatMapYScale = d3.scaleLinear()
-                     .domain([12, 0])
+                     .domain([0, 11])
                      .range ([heatMapHeight - padding, padding]);
 
               /*scale for temperature indication as color*/
@@ -148,11 +151,11 @@ document.addEventListener("DOMContentLoaded", function(){
                             return heatMapXScale(data["year"]);
                      })
                      .attr("y", (data)=>{
-                            return heatMapYScale(data["month"])-barYPositionOffset;
+                            return heatMapYScale(data["month"]-1)-barHeight/2;
                      })
                      /*add year and month as attributes to use on tooltip*/
                      .attr("data-year", (data)=>data["year"])
-                     .attr("data-month", (data)=>data["month"])
+                     .attr("data-month", (data)=>data["month"]-1)
                      .attr("data-temp", (data)=>data["variance"])
                      
                      /*Setting up tooltip in a way so it passes the freeCodeCamp tooltip test*/
@@ -191,11 +194,14 @@ document.addEventListener("DOMContentLoaded", function(){
               const yAxis = d3.axisLeft(heatMapYScale);
               const legendXAxis = d3.axisBottom(temperatureColorScale);
 
-              xAxis.ticks(10);
-              yAxis.ticks(13)
+              xAxis.ticks(10)
+              .tickFormat(year =>{
+                     return year;
+              });
+              yAxis.ticks(12)
               .tickFormat(monthNumber => {
-                     if(monthNumber < 13){
-                            return monthNames[monthNumber-1];
+                     if(monthNumber < 12 && monthNumber >= 0){
+                            return monthNames[monthNumber];
                      } else {
                             return "";
                      }
@@ -210,7 +216,7 @@ document.addEventListener("DOMContentLoaded", function(){
               .attr("transform", "translate(-20,10) rotate(-45)");
 
               svg.append("g")
-              .attr("transform","translate(" + padding + ",0)")
+              .attr("transform","translate(" + padding + "," + 0 + ")")
               .attr("id", "y-axis")
               .call(yAxis);
 
@@ -223,7 +229,7 @@ document.addEventListener("DOMContentLoaded", function(){
 
              
              /*DEBUG*/
-              console.log(dataArray[0]);
+              console.log(jsonDATA);
 
 
        };

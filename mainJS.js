@@ -16,26 +16,22 @@ document.addEventListener("DOMContentLoaded", function(){
               const padding = 60;
 
               /*constants for legend*/
-              const legendXAxisTicks = 5;
+              const legendXAxisTicks = 10;
               const legendChartWidth = chartWidth*0.3;
               const legendChartHeight = chartHeight - heatMapHeight;
               const chartBarHeight = 20;
               const chartBarWidth = legendChartWidth/legendXAxisTicks;
-
-              console.log("Legend:");
-              console.log(chartBarWidth);
 
               /*Month array for axis labeling*/
               const monthNames = ["January","February","March","April","May","June","July", "August","September","October","November","December"];
 
               /*DATA PROCESSING FOR HEAT MAP*/
               const dataArray = [...jsonDATA["monthlyVariance"]];
-              console.log(dataArray);
               
               /*generate data set for temperature legend and other descriptive elements*/
-              let minimumTemp = d3.min(dataArray, (data)=>data["variance"]);
-              let maximumTemp = d3.max(dataArray, (data)=>data["variance"]);
-              let maxDifference = maximumTemp-minimumTemp;
+              let minimumTemp = Math.floor(d3.min(dataArray, (data)=>data["variance"]));
+              let maximumTemp = Math.ceil(d3.max(dataArray, (data)=>data["variance"]));
+              let maxDifference = Math.abs(maximumTemp-minimumTemp);
               let temperatureStep = maxDifference/legendXAxisTicks;
               let temporaryArray = [];
               let temporaryFunction = ()=>{
@@ -52,6 +48,12 @@ document.addEventListener("DOMContentLoaded", function(){
               let endYear = d3.max(dataArray, data=>data["year"]);
               
               /*DATA PROCESSING FOR HEAT MAP END*/
+
+              /*Function for generating bar colours*/
+
+              const temperatureColorValue = function(){
+
+              };
 
               /*Create blank SVG element for heatmap*/
               const svg = d3.select("#heat-map")
@@ -118,14 +120,15 @@ document.addEventListener("DOMContentLoaded", function(){
               .range([0, legendChartWidth]);
 
               /*let's calculate heat map bar width and height*/
-              const barWidth = (chartWidth-padding*2)/(d3.max(dataArray, (data)=>data["year"]) - d3.min(dataArray, (data)=>data["year"])) + "px";
+              const barWidth = (chartWidth-padding*2)/(d3.max(dataArray, (data)=>data["year"]) - d3.min(dataArray, (data)=>data["year"]));
               /*offset is half the height of a bar - to center it along Y labels when positioning on heat map*/
               const barYPositionOffset = ((heatMapHeight-padding*2)/12)/2;
               const barHeight =  barYPositionOffset*2;
               const barHeightPx =  barHeight + "px";
 
               const setTempColor = (tempVariance)=>{
-                     return "hsl(" + temperatureColorScale(tempVariance) + ", 100%, 50%";
+                     
+                     return "rgb(255," + temperatureColorScale(tempVariance) + ", 0)";
               };
 
               svg.selectAll("rect")
@@ -138,7 +141,7 @@ document.addEventListener("DOMContentLoaded", function(){
                      .attr("height", barHeightPx)
                      .style("fill", (data)=>setTempColor(data["variance"]))
                      .attr("x", (data)=>{
-                            return heatMapXScale(data["year"]);
+                            return heatMapXScale(data["year"])-barWidth/2;
                      })
                      .attr("y", (data)=>{
                             return heatMapYScale(data["month"]-1)-barHeight/2;
@@ -205,7 +208,7 @@ document.addEventListener("DOMContentLoaded", function(){
               .attr("transform", "translate(-20,10) rotate(-45)");
 
               svg.append("g")
-              .attr("transform","translate(" + padding + "," + 0 + ")")
+              .attr("transform","translate(" + (padding-barWidth/2) + "," + 0 + ")")
               .attr("id", "y-axis")
               .call(yAxis);
 
@@ -236,7 +239,7 @@ document.addEventListener("DOMContentLoaded", function(){
 
              
              /*DEBUG*/
-              console.log(jsonDATA);
+              console.log(legendTemperatureData);
 
 
        };

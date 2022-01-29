@@ -17,20 +17,16 @@ document.addEventListener("DOMContentLoaded", function(){
 
               /*constants for legend*/
               const legendXAxisTicks = 5;
+              const legendChartWidth = chartWidth*0.3;
+              const legendChartHeight = chartHeight - heatMapHeight;
+              const chartBarHeight = 20;
+              const chartBarWidth = legendChartWidth/legendXAxisTicks;
+
+              console.log("Legend:");
+              console.log(chartBarWidth);
 
               /*Month array for axis labeling*/
               const monthNames = ["January","February","March","April","May","June","July", "August","September","October","November","December"];
-
-              /*Some functions for returning proper data*/
-              const returnYear = (jsonObject) => {
-                     return jsonObject["year"];
-              };
-              const returnMonth = (jsonObject) => {
-                     return jsonObject["month"];
-              };
-              const returnVariance = (jsonObject) => {
-                     return jsonObject["variance"];
-              };
 
               /*DATA PROCESSING FOR HEAT MAP*/
               const dataArray = [...jsonDATA["monthlyVariance"]];
@@ -57,9 +53,16 @@ document.addEventListener("DOMContentLoaded", function(){
               
               /*DATA PROCESSING FOR HEAT MAP END*/
 
-              /*Create blank SVG element*/
+              /*Create blank SVG element for heatmap*/
               const svg = d3.select("#heat-map")
                      .append("svg")
+                     .attr("width", chartWidth)
+                     .attr("height", chartHeight)
+                     .attr("id", "grafikas");
+
+              /*create g element for legend*/
+              const svgLegend = d3.select("#legenda")
+                     .append("g")
                      .attr("width", chartWidth)
                      .attr("height", chartHeight)
                      .attr("id", "grafikas");
@@ -112,7 +115,7 @@ document.addEventListener("DOMContentLoaded", function(){
               const temperatureColorScale = d3.scaleLinear()
               .domain([minimumTemp, maximumTemp])
               /*color hue range yellow to red (60 - 0)*/
-              .range([60, 0]);
+              .range([0, legendChartWidth]);
 
               /*let's calculate heat map bar width and height*/
               const barWidth = (chartWidth-padding*2)/(d3.max(dataArray, (data)=>data["year"]) - d3.min(dataArray, (data)=>data["year"])) + "px";
@@ -124,19 +127,6 @@ document.addEventListener("DOMContentLoaded", function(){
               const setTempColor = (tempVariance)=>{
                      return "hsl(" + temperatureColorScale(tempVariance) + ", 100%, 50%";
               };
-
-              svg.selectAll("#legend-bars")
-                     .data(legendTemperatureData)
-                     .enter()
-                     .append("rect")
-                     .attr("id", "legend-bar")
-                     .attr("width", barWidth)
-                     .attr("height", barHeight)
-                     .style("fill", (data)=>setTempColor(data))
-                     .attr("x", (data)=>{
-                            return temperatureColorScale(data)+padding;
-                     })
-                     .attr("y", chartHeight-barHeight-padding-barYPositionOffset);
 
               svg.selectAll("rect")
                      .data(dataArray)
@@ -160,8 +150,6 @@ document.addEventListener("DOMContentLoaded", function(){
                      
                      /*Setting up tooltip in a way so it passes the freeCodeCamp tooltip test*/
                      .on("mouseover", (pelesEvent)=>{
-                            console.log("mouseover:");
-                            console.log(pelesEvent.layerX);
 
                             toolTip
                                    .transition()
@@ -180,7 +168,8 @@ document.addEventListener("DOMContentLoaded", function(){
                                    .style("Top",  (pelesEvent.layerY + 100) + "px");
 
                             toolTip
-                                   .attr("data-temp", pelesEvent.target.attributes.getNamedItem("data-temp").nodeValue);
+                                   .attr("data-temp", pelesEvent.target.attributes.getNamedItem("data-temp").nodeValue)
+                                   .attr("data-year", pelesEvent.target.attributes.getNamedItem("data-year").nodeValue);
                      })
                      .on("mouseout", ()=>{
                             toolTip
@@ -220,12 +209,30 @@ document.addEventListener("DOMContentLoaded", function(){
               .attr("id", "y-axis")
               .call(yAxis);
 
+              /*Generate legend*/
+
               svg.append("g")
+              .attr("id", "legend")
+              .append("g")
               .attr("transform", "translate(" + padding + "," + (chartHeight - padding-barYPositionOffset) + ")")
               .attr("id", "legend-axis")
               .call(legendXAxis)
               .selectAll("text")
               .attr("transform", "translate(-20,10) rotate(-90)");
+
+              d3.select("#legend")
+                     .selectAll("#legend-bars")
+                     .data(legendTemperatureData)
+                     .enter()
+                     .append("rect")
+                     .attr("id", "legend-bar")
+                     .attr("width", chartBarWidth)
+                     .attr("height", chartBarHeight)
+                     .style("fill", (data)=>setTempColor(data))
+                     .attr("x", (data)=>{
+                            return temperatureColorScale(data)+padding;
+                     })
+                     .attr("y", chartHeight-chartBarHeight-padding-barYPositionOffset);
 
              
              /*DEBUG*/

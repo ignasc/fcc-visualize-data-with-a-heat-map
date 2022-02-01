@@ -31,15 +31,13 @@ document.addEventListener("DOMContentLoaded", function(){
               /*generate data set for temperature legend and other descriptive elements*/
               let minimumTemp = Math.floor(d3.min(dataArray, (data)=>data["variance"]));
               let maximumTemp = Math.ceil(d3.max(dataArray, (data)=>data["variance"]));
-              let maxDifference = Math.abs(maximumTemp-minimumTemp);
-              let temperatureStep = maxDifference/legendXAxisTicks;
               let temporaryArray = [];
               let temporaryFunction = ()=>{
                      let i = minimumTemp;
                      do{
                             temporaryArray.push(i);
-                            i=i+temperatureStep
-                     } while(i<=maximumTemp+1);
+                            i=i+1;
+                     } while(i<maximumTemp);
               };
               temporaryFunction();
               const legendTemperatureData = [...temporaryArray];
@@ -114,10 +112,17 @@ document.addEventListener("DOMContentLoaded", function(){
                      .range ([heatMapHeight - padding, padding]);
 
               /*scale for temperature indication as color*/
-              const temperatureColorScale = d3.scaleLinear()
+              const temperatureColorScaleAxis = d3.scaleLinear()
               .domain([minimumTemp, maximumTemp])
-              /*color hue range yellow to red (60 - 0)*/
-              .range([0, legendChartWidth]);
+              /*rgb color range 0-255*/
+              .range([0, 255]);
+              /*Scale for negative and positive temperatures*/
+              const temperatureColorScalePOS = d3.scaleLinear()
+              .domain([0, maximumTemp])
+              .range([255, 0]);
+              const temperatureColorScaleNEG = d3.scaleLinear()
+              .domain([0, minimumTemp])
+              .range([255, 0]);
 
               /*let's calculate heat map bar width and height*/
               const barWidth = (chartWidth-padding*2)/(d3.max(dataArray, (data)=>data["year"]) - d3.min(dataArray, (data)=>data["year"]));
@@ -127,8 +132,21 @@ document.addEventListener("DOMContentLoaded", function(){
               const barHeightPx =  barHeight + "px";
 
               const setTempColor = (tempVariance)=>{
-                     
-                     return "rgb(255," + temperatureColorScale(tempVariance) + ", 0)";
+                     let selector = "";
+                     if(tempVariance > 0){
+                            selector = "POS";
+                     } else {
+                            selector = "NEG";
+                     };
+
+                     switch(selector){
+                            case "POS":
+                                   return "rgb(255," + temperatureColorScalePOS(tempVariance) + ", 0)";
+                            case "NEG":
+                                   return "rgb(0," + temperatureColorScaleNEG(tempVariance) + ", 255)";
+                            default:
+                                   return "rgb(0,255,255)";
+                     };
               };
 
               svg.selectAll("rect")
@@ -184,7 +202,7 @@ document.addEventListener("DOMContentLoaded", function(){
               /*Generate X and Y axis with labels*/
               const xAxis = d3.axisBottom(heatMapXScale);
               const yAxis = d3.axisLeft(heatMapYScale);
-              const legendXAxis = d3.axisBottom(temperatureColorScale);
+              const legendXAxis = d3.axisBottom(temperatureColorScaleAxis);
 
               xAxis.ticks(10)
               .tickFormat(year =>{
@@ -229,11 +247,11 @@ document.addEventListener("DOMContentLoaded", function(){
                      .enter()
                      .append("rect")
                      .attr("id", "legend-bar")
-                     .attr("width", chartBarWidth)
+                     .attr("width", 10)
                      .attr("height", chartBarHeight)
                      .style("fill", (data)=>setTempColor(data))
                      .attr("x", (data)=>{
-                            return temperatureColorScale(data)+padding;
+                            return temperatureColorScaleAxis(data)+padding;
                      })
                      .attr("y", chartHeight-chartBarHeight-padding-barYPositionOffset);
 

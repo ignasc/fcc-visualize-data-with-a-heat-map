@@ -13,14 +13,13 @@ document.addEventListener("DOMContentLoaded", function(){
               const chartWidth = pageWidth<1024? 1024:pageWidth*0.8;
               const chartHeight = 800;
               const heatMapHeight = chartHeight*0.8;
-              const padding = 60;
+              const padding = 80;
 
               /*constants for legend*/
               const legendXAxisTicks = 10;
               const legendChartWidth = chartWidth*0.3;
-              const legendChartHeight = chartHeight - heatMapHeight;
+              /*bar width is calculated at the end, once legend temperature array is created*/
               const chartBarHeight = 20;
-              const chartBarWidth = legendChartWidth/legendXAxisTicks;
 
               /*Month array for axis labeling*/
               const monthNames = ["January","February","March","April","May","June","July", "August","September","October","November","December"];
@@ -80,7 +79,7 @@ document.addEventListener("DOMContentLoaded", function(){
 
              /*Add a Title*/
              svg.append("text")
-              .text("Heat Map Title")
+              .text("Monthly Global Land-Surface Temperature")
               .attr("x", chartWidth/2)
               .attr("y", padding/2)
               .attr("id", "title")
@@ -178,15 +177,16 @@ document.addEventListener("DOMContentLoaded", function(){
                                    .style("opacity", 0.9);
 
                             toolTip
-                                   .html("Temperature Variance: " + pelesEvent.target.attributes.getNamedItem("data-temp").nodeValue + "</br>" + "Date: " + pelesEvent.target.attributes.getNamedItem("data-year").nodeValue + "-" + pelesEvent.target.attributes.getNamedItem("data-month").nodeValue)
+                                   .html("Temperature: " + (Math.round((jsonDATA["baseTemperature"]*1+pelesEvent.target.attributes.getNamedItem("data-temp").nodeValue*1)*100)/100) + "</br>" + (pelesEvent.target.attributes.getNamedItem("data-temp").nodeValue*1>=0?"+"+pelesEvent.target.attributes.getNamedItem("data-temp").nodeValue:pelesEvent.target.attributes.getNamedItem("data-temp").nodeValue) + "</br>Date: " + pelesEvent.target.attributes.getNamedItem("data-year").nodeValue + "-" + pelesEvent.target.attributes.getNamedItem("data-month").nodeValue)
                                    .style("position", "fixed")
                                    .style("background-color", "white")
-                                   .style("width", "120px")
+                                   /*for width 19ch comes from 19 character in longest line: "Temperature: xx.xx"*/
+                                   .style("width", "19ch")
                                    .style("border-radius", "5px")
                                    .style("box-shadow", "0px 5px 10px rgba(44, 72, 173, 0.5)")
                                    /*tooltip positioning by getting data from mouseover event target*/
                                    .style("margin-left", pelesEvent.layerX + "px")
-                                   .style("Top",  (pelesEvent.layerY + 100) + "px");
+                                   .style("Top",  (pelesEvent.layerY-80) + "px");
 
                             toolTip
                                    .attr("data-temp", pelesEvent.target.attributes.getNamedItem("data-temp").nodeValue)
@@ -241,24 +241,20 @@ document.addEventListener("DOMContentLoaded", function(){
               .selectAll("text")
               .attr("transform", "translate(-20,10) rotate(-90)");
 
+              const legendChartBarWidth = (temperatureColorScaleAxis(d3.max(legendTemperatureData))-temperatureColorScaleAxis(d3.min(legendTemperatureData)))/legendTemperatureData.length;
+
               d3.select("#legend")
                      .selectAll("#legend-bars")
                      .data(legendTemperatureData)
                      .enter()
                      .append("rect")
                      .attr("id", "legend-bar")
-                     .attr("width", 10)
+                     .attr("width", legendChartBarWidth)
                      .attr("height", chartBarHeight)
                      .style("fill", (data)=>setTempColor(data))
                      .attr("x", (data)=>{
-                            return temperatureColorScaleAxis(data)+padding;
+                            return temperatureColorScaleAxis(data)+padding-legendChartBarWidth/2;
                      })
                      .attr("y", chartHeight-chartBarHeight-padding-barYPositionOffset);
-
-             
-             /*DEBUG*/
-              console.log(legendTemperatureData);
-
-
        };
 });
